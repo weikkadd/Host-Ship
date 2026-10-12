@@ -248,6 +248,28 @@ def build_error_message(title, reason, ip):
     )
 
 
+def try_click_turnstile(page):
+    try:
+        for frame in page.frames:
+            if "challenges.cloudflare.com" in (frame.url or ""):
+                box = frame.locator("input[type='checkbox']")
+
+                if box.count():
+                    box.first.click(timeout=2000)
+
+                    return
+
+                frame.locator("body").click(
+                    position={"x": 28, "y": 28},
+                    timeout=2000,
+                )
+
+                return
+
+    except Exception:
+        pass
+
+
 def first_visible(page, selectors):
     for selector in selectors:
         locator = page.locator(
@@ -362,10 +384,15 @@ def login_if_needed(page):
             "等待安全验证自动完成..."
         )
 
-        deadline = time.time() + 45
+        deadline = time.time() + 60
+        tick = 0
 
         while time.time() < deadline:
             time.sleep(2)
+            tick += 1
+
+            if tick % 2 == 0:
+                try_click_turnstile(page)
 
             try:
                 if submit.is_enabled():
@@ -383,8 +410,7 @@ def login_if_needed(page):
 
                 log(
                     "❌ 安全验证未自动通过，"
-                    "无头浏览器无法完成人机验证，"
-                    "需配置 NODE_LINK 更换出口 IP"
+                    "已尝试点击 Turnstile 但验证未完成"
                 )
 
                 return False
@@ -394,12 +420,6 @@ def login_if_needed(page):
 
     submit.click()
 
-    page.wait_for_timeout(3000)
-
-    text = page.locator(
-        "body"
-    ).inner_text().lower()
-
     challenge_words = [
         "captcha",
         "verify you are human",
@@ -407,13 +427,36 @@ def login_if_needed(page):
         "cloudflare",
     ]
 
+    text = ""
+
+    for attempt in range(15):
+        page.wait_for_timeout(2000)
+
+        try_click_turnstile(page)
+
+        text = page.locator(
+            "body"
+        ).inner_text().lower()
+
+        if not any(
+            word in text
+            for word in challenge_words
+        ):
+            break
+
+        if attempt == 0:
+            log(
+                "⚠️ 提交后检测到安全验证，"
+                "正在尝试点击 Turnstile..."
+            )
+
     if any(
         word in text
         for word in challenge_words
     ):
         log(
-            "⚠️ 检测到验证码/"
-            "安全验证，需要手动处理"
+            "⚠️ 安全验证未通过，"
+            "已尝试点击 Turnstile 但验证未完成"
         )
         return False
 
@@ -644,14 +687,15 @@ def main():
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            headless=True,
+            headless=False,
             proxy={
                 "server": PROXY_SERVER
             }
             if IS_PROXY
             else None,
             args=[
-                "--no-sandbox"
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
             ],
         )
 
@@ -667,6 +711,11 @@ def main():
                 "(KHTML, like Gecko) "
                 "Chrome/128.0.0.0 Safari/537.36"
             ),
+        )
+
+        context.add_init_script(
+            "Object.defineProperty(navigator, 'webdriver', "
+            "{get: () => undefined});"
         )
 
         page = context.new_page()
