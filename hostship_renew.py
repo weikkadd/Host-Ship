@@ -341,6 +341,57 @@ def login_if_needed(page):
         log("❌ 没找到登录按钮")
         return False
 
+    try:
+        disabled = submit.is_disabled()
+
+    except Exception:
+        disabled = False
+
+    if disabled:
+        label = ""
+
+        try:
+            label = submit.inner_text().strip()
+
+        except Exception:
+            pass
+
+        log(
+            "⚠️ 提交按钮不可点击（"
+            f"{label or 'disabled'}），"
+            "等待安全验证自动完成..."
+        )
+
+        deadline = time.time() + 45
+
+        while time.time() < deadline:
+            time.sleep(2)
+
+            try:
+                if submit.is_enabled():
+                    break
+
+            except Exception:
+                pass
+
+        try:
+            if submit.is_disabled():
+                page.screenshot(
+                    path="hostship_security_check.png",
+                    full_page=True,
+                )
+
+                log(
+                    "❌ 安全验证未自动通过，"
+                    "无头浏览器无法完成人机验证，"
+                    "需配置 NODE_LINK 更换出口 IP"
+                )
+
+                return False
+
+        except Exception:
+            return False
+
     submit.click()
 
     page.wait_for_timeout(3000)
