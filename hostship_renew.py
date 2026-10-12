@@ -653,7 +653,10 @@ def confirm_renewal(page):
                         "✅ 确认弹窗已打开，"
                         "点击 Renew now..."
                     )
-                    button.click()
+                    button.click(
+                        force=True,
+                        timeout=5000,
+                    )
                     return True
 
         except Exception:
