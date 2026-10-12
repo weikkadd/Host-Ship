@@ -567,20 +567,43 @@ def find_renew_button(page):
 
 def confirm_renewal(page):
     """Wait for the renewal dialog and click the real submit button."""
-    title = page.get_by_text(
-        re.compile(
-            r"Confirm\s+server\s+renewal",
-            re.I,
-        )
-    ).first
+    title_patterns = [
+        re.compile(r"Confirm\s+server\s+renewal", re.I),
+        re.compile(r"Confirm\s+renewal", re.I),
+        re.compile(r"Renew\s+server", re.I),
+        re.compile(r"Confirm", re.I),
+    ]
 
-    try:
-        title.wait_for(
-            state="visible",
-            timeout=8000,
-        )
-    except Exception:
+    title = None
+
+    for pattern in title_patterns:
+        candidate = page.get_by_text(pattern).first
+
+        try:
+            candidate.wait_for(
+                state="visible",
+                timeout=4000,
+            )
+
+            title = candidate
+
+            break
+
+        except Exception:
+            continue
+
+    if title is None:
         log("❌ 点击 Renew 后未出现续期确认弹窗")
+
+        try:
+            body_snippet = page.locator(
+                "body"
+            ).inner_text()[:500]
+
+            log(f"📋 页面文本片段：{body_snippet}")
+        except Exception:
+            pass
+
         return False
 
     confirm_buttons = [
@@ -602,6 +625,16 @@ def confirm_renewal(page):
         ),
         page.locator(
             'button:has-text("Renew now")'
+        ),
+        page.get_by_role(
+            "button",
+            name=re.compile(
+                r"renew",
+                re.I,
+            ),
+        ),
+        page.locator(
+            'button:has-text("Renew")'
         ),
     ]
 
