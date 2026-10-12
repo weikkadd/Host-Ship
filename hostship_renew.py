@@ -612,6 +612,25 @@ def confirm_renewal(page):
         ).last.get_by_role(
             "button",
             name=re.compile(
+                r"Add\s+5\s+days",
+                re.I,
+            ),
+        ),
+        page.get_by_role(
+            "button",
+            name=re.compile(
+                r"Add\s+5\s+days",
+                re.I,
+            ),
+        ),
+        page.locator(
+            'button:has-text("Add 5 days")'
+        ),
+        page.get_by_role(
+            "dialog"
+        ).last.get_by_role(
+            "button",
+            name=re.compile(
                 r"^Renew\s+now$",
                 re.I,
             ),
@@ -651,7 +670,7 @@ def confirm_renewal(page):
                 ):
                     log(
                         "✅ 确认弹窗已打开，"
-                        "点击 Renew now..."
+                        "点击确认按钮..."
                     )
                     button.click(
                         force=True,
