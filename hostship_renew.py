@@ -15,6 +15,7 @@ from playwright.sync_api import sync_playwright
 SERVER_URL = os.getenv("SERVER_URL", "").strip()
 HOSTSHIP_LOGIN = os.getenv("HOSTSHIP_LOGIN", "").strip()
 HOSTSHIP_PASSWORD = os.getenv("HOSTSHIP_PASSWORD", "").strip()
+HOSTSHIP_COOKIE = os.getenv("HOSTSHIP_COOKIE", "").strip()
 
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "").strip()
 TG_CHAT_ID = os.getenv("TG_CHAT_ID", "").strip()
@@ -246,6 +247,28 @@ def build_error_message(title, reason, ip):
         f"🕗 检查时间：{now.strftime('%Y/%m/%d %H:%M')}\n\n"
         f"⚠️ 原因：{reason}"
     )
+
+
+def inject_cookies(context, cookie_str):
+    cookies = []
+
+    for item in cookie_str.split(";"):
+        item = item.strip()
+
+        if "=" in item:
+            name, value = item.split("=", 1)
+
+            cookies.append({
+                "name": name.strip(),
+                "value": value.strip(),
+                "domain": "panel.host-ship.com",
+                "path": "/",
+            })
+
+    if cookies:
+        context.add_cookies(cookies)
+
+    return len(cookies)
 
 
 def try_click_turnstile(page):
@@ -718,6 +741,16 @@ def main():
             "{get: () => undefined});"
         )
 
+        if HOSTSHIP_COOKIE:
+            count = inject_cookies(
+                context,
+                HOSTSHIP_COOKIE,
+            )
+
+            log(f"🍪 注入 {count} 个 cookie")
+        else:
+            log("⚠️ 未配置 HOSTSHIP_COOKIE")
+
         page = context.new_page()
 
         try:
@@ -730,7 +763,12 @@ def main():
                 tg(
                     build_error_message(
                         "❌ Host-Ship 登录失败",
-                        "登录失败或遇到安全验证",
+                        (
+                            "Cookie 已过期或无效，"
+                            "请在本地浏览器重新登录"
+                            " panel.host-ship.com，"
+                            "更新 HOSTSHIP_COOKIE secret"
+                        ),
                         ip,
                     )
                 )

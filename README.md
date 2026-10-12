@@ -16,11 +16,24 @@ Host-Ship 免费服务器自动续期脚本（GitHub Actions 版）。https://pa
 | Name | 说明 |
 |------|------|
 | `SERVER_URL` | 服务器详情页地址，如 `https://panel.host-ship.com/server/xxxxxxxx`（必填） |
-| `HOSTSHIP_LOGIN` | 登录邮箱（必填） |
-| `HOSTSHIP_PASSWORD` | 登录密码（必填） |
+| `HOSTSHIP_COOKIE` | 浏览器登录后的 Cookie 字符串（必填，绕过 Turnstile） |
+| `HOSTSHIP_LOGIN` | 登录邮箱（Cookie 失效时备用） |
+| `HOSTSHIP_PASSWORD` | 登录密码（Cookie 失效时备用） |
 | `TG_BOT_TOKEN` | Telegram Bot Token（必填） |
 | `TG_CHAT_ID` | 接收通知的 Chat ID（必填） |
 | `NODE_LINK` | `vmess://...` / `vless://...` 分享链接（可选） |
+
+## 导出 Cookie
+
+Host-Ship 登录页有 Cloudflare Turnstile 人机验证，自动登录会被拦截。需在本地浏览器手动登录后导出 Cookie：
+
+1. 用 Chrome / Edge 打开 `panel.host-ship.com` 并登录
+2. 按 `F12` 打开开发者工具 → **Network** 标签
+3. 刷新页面，点任意一个请求 → **Headers** → 找 `Request Headers` 里的 `Cookie:` 行
+4. 复制整行 Cookie 值（一长串 `key1=val1; key2=val2; ...`）
+5. 存到 GitHub Secrets `HOSTSHIP_COOKIE`
+
+Cookie 过期后脚本会 TG 通知，重复上述步骤更新即可。
 
 ## 使用
 
