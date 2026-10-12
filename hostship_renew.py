@@ -673,6 +673,9 @@ def renewal_succeeded(before, after, body_text):
         "renewal successful",
         "successfully renewed",
         "renew limit reached",
+        "has been renewed",
+        "server renewed",
+        "renewed",
     ]
 
     if any(word in text for word in success_words):
@@ -690,9 +693,11 @@ def renewal_succeeded(before, after, body_text):
 
 def wait_for_renewal_result(page, before):
     """Poll once, then reload to avoid reading a stale SPA state."""
+    page.wait_for_timeout(3000)
+
     after = get_renewal_text(page)
 
-    for attempt in range(5):
+    for attempt in range(8):
         body_text = page.locator(
             "body"
         ).inner_text()
@@ -707,12 +712,24 @@ def wait_for_renewal_result(page, before):
 
         page.wait_for_timeout(2000)
 
-        if attempt == 1:
+        if attempt in (1, 4, 6):
             page.reload(
                 wait_until="domcontentloaded",
                 timeout=60000,
             )
             page.wait_for_timeout(2000)
+
+    log(f"📋 续期前：{before}")
+    log(f"📋 续期后：{after}")
+
+    try:
+        body_snippet = page.locator(
+            "body"
+        ).inner_text()[:500]
+
+        log(f"📋 页面文本片段：{body_snippet}")
+    except Exception:
+        pass
 
     return False, after
 
