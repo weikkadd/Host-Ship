@@ -612,19 +612,19 @@ def confirm_renewal(page):
         ).last.get_by_role(
             "button",
             name=re.compile(
-                r"Add\s+5\s+days",
+                r"Add\s+\d+\s+days?",
                 re.I,
             ),
         ),
         page.get_by_role(
             "button",
             name=re.compile(
-                r"Add\s+5\s+days",
+                r"Add\s+\d+\s+days?",
                 re.I,
             ),
         ),
         page.locator(
-            'button:has-text("Add 5 days")'
+            'button:has-text("Add")'
         ),
         page.get_by_role(
             "dialog"
