@@ -1,6 +1,6 @@
 # Host-Ship Auto Renew
 
-Host-Ship 免费服务器自动续期脚本（GitHub Actions 版）。
+Host-Ship 免费服务器自动续期脚本（GitHub Actions 版）。https://panel.host-ship.com/
 
 ## 功能
 
