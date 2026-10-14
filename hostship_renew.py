@@ -503,6 +503,7 @@ def get_renewal_text(page):
         r"Renewal\s+in\s+\d+\s+Days?",
         r"Renew\s+in\s+\d+\s+Days?",
         r"\d+\s+Days?\s+until\s+renewal",
+        r"EXPIRES[^\n]*\n+\s*\d+\s+Days?",
     ]
 
     for pattern in patterns:
@@ -854,6 +855,27 @@ def main():
             log(
                 f"📅 当前续期状态：{before}"
             )
+
+            before_days = get_days(before)
+
+            if (
+                before_days is not None
+                and before_days > 5
+            ):
+                log(
+                    f"⏳ 还剩 {before_days} 天，"
+                    "未到续期窗口，不进行操作"
+                )
+
+                if MANUAL_RUN:
+                    tg(
+                        build_check_message(
+                            before,
+                            ip,
+                        )
+                    )
+
+                return 0
 
             body = page.locator(
                 "body"
